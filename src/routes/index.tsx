@@ -72,11 +72,13 @@ const notaTexto: Record<Nota, string> = {
 function Card({
   title,
   subtitle,
+  badge,
   children,
   className = "",
 }: {
   title?: string;
   subtitle?: string;
+  badge?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -86,9 +88,12 @@ function Card({
     >
       {title && (
         <header className="mb-4">
-          <h2 className="font-display text-base font-semibold tracking-tight text-card-foreground">
-            {title}
-          </h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-display text-base font-semibold tracking-tight text-card-foreground">
+              {title}
+            </h2>
+            {badge}
+          </div>
           {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
         </header>
       )}
@@ -297,7 +302,7 @@ function Dashboard() {
         <AnaliseSugestoes total={dados.length} />
 
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_22rem]">
           <Card
             title="Entrevistas individuais"
             subtitle="Clique em uma pessoa para ler os comentários completos"
@@ -366,12 +371,22 @@ function Dashboard() {
             <Card
               title="Pessoas que pediram demissão"
               subtitle="Classificação geral dada à empresa"
+              badge={
+                <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+                  Avaliação Geral
+                </span>
+              }
             >
               <Pizza dados={dados.filter((e) => e.iniciativa === "Colaborador")} />
             </Card>
             <Card
               title="Pessoas que foram dispensadas"
               subtitle="Classificação geral dada à empresa"
+              badge={
+                <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+                  Avaliação Geral
+                </span>
+              }
             >
               <Pizza dados={dados.filter((e) => e.iniciativa !== "Colaborador")} />
             </Card>

@@ -297,7 +297,7 @@ function Dashboard() {
         <AnaliseSugestoes total={dados.length} />
 
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_22rem]">
           <Card
             title="Entrevistas individuais"
             subtitle="Clique em uma pessoa para ler os comentários completos"

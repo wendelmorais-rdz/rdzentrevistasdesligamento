@@ -361,7 +361,7 @@ function Dashboard() {
   );
 }
 
-function AnaliseSugestoes() {
+function AnaliseSugestoes({ total }: { total: number }) {
   const [ativo, setAtivo] = useState<string>(TEMAS[0]!.id);
   const tema = TEMAS.find((t) => t.id === ativo) ?? TEMAS[0]!;
 

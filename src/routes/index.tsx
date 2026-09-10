@@ -112,7 +112,10 @@ function Dashboard() {
   const [aberta, setAberta] = useState<string | null>(null);
 
   const dados: Entrevista[] = useMemo(
-    () => (registros.length ? registros : ENTREVISTAS),
+    () =>
+      [...(registros.length ? registros : ENTREVISTAS)].sort((a, b) =>
+        b.data.localeCompare(a.data),
+      ),
     [registros],
   );
 

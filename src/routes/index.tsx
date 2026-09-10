@@ -186,7 +186,7 @@ function Dashboard() {
           <img
             src={rdzSimbolo.url}
             alt="Símbolo Grupo RDZ"
-            className="h-14 w-auto object-contain sm:h-16"
+            className="h-24 w-auto object-contain sm:h-28"
           />
         </header>
 

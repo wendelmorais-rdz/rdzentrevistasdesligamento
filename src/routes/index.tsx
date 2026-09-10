@@ -89,17 +89,12 @@ function Kpi({ label, value, hint }: { label: string; value: string; hint?: stri
 }
 
 function Dashboard() {
-  const [loja, setLoja] = useState<string>("Todas");
+  const registros = Route.useLoaderData();
   const [aberta, setAberta] = useState<string | null>(null);
 
-  const lojas = useMemo(
-    () => ["Todas", ...Array.from(new Set(ENTREVISTAS.map((e) => e.loja))).sort()],
-    [],
-  );
-
   const dados: Entrevista[] = useMemo(
-    () => (loja === "Todas" ? ENTREVISTAS : ENTREVISTAS.filter((e) => e.loja === loja)),
-    [loja],
+    () => (registros.length ? registros : ENTREVISTAS),
+    [registros],
   );
 
   const total = dados.length;

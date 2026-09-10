@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { AlertOctagon, AlertTriangle, CheckCircle2 } from "lucide-react";
 import {
   CRITERIOS,
   ENTREVISTAS,

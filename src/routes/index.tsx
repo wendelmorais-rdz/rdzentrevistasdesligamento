@@ -316,7 +316,7 @@ function Dashboard() {
                         {e.nome}
                       </span>
                       <span className="block text-xs text-muted-foreground">
-                        {e.funcao} · {e.loja} · {e.admissao} a {e.demissao}
+                        {e.funcao} · {e.loja} · {tempoDeCasa(e.admissao, e.demissao)}
                       </span>
                     </span>
                     <span className="flex items-center gap-3">

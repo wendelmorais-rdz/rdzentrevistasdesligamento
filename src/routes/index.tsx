@@ -589,8 +589,9 @@ function AnaliseSugestoes({ total }: { total: number }) {
         <div className="rounded-2xl border border-border bg-muted/50 p-5">
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`rounded-full px-2.5 py-1 text-xs font-semibold text-card ${cor[tema.sentimento]}`}
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-card ${cor[tema.sentimento]}`}
             >
+              {icone[tema.sentimento]}
               {rotulo[tema.sentimento]}
             </span>
             {tema.lojas.map((l) => (

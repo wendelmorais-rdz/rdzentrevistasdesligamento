@@ -9,6 +9,7 @@ import {
   type Nota,
 } from "@/data/entrevistas";
 import { LEITURA_SUGESTOES, TEMAS, type Sentimento } from "@/data/analise";
+import { listarEntrevistas } from "@/lib/entrevistas.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -29,6 +30,23 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: async () => {
+    try {
+      return await listarEntrevistas();
+    } catch {
+      return [] as Entrevista[];
+    }
+  },
+  errorComponent: () => (
+    <main className="grid min-h-screen place-items-center p-8 text-center text-sm text-muted-foreground">
+      Não foi possível carregar as entrevistas agora. Atualize a página em instantes.
+    </main>
+  ),
+  notFoundComponent: () => (
+    <main className="grid min-h-screen place-items-center p-8 text-sm text-muted-foreground">
+      Página não encontrada.
+    </main>
+  ),
   component: Dashboard,
 });
 
@@ -89,17 +107,12 @@ function Kpi({ label, value, hint }: { label: string; value: string; hint?: stri
 }
 
 function Dashboard() {
-  const [loja, setLoja] = useState<string>("Todas");
+  const registros = Route.useLoaderData();
   const [aberta, setAberta] = useState<string | null>(null);
 
-  const lojas = useMemo(
-    () => ["Todas", ...Array.from(new Set(ENTREVISTAS.map((e) => e.loja))).sort()],
-    [],
-  );
-
   const dados: Entrevista[] = useMemo(
-    () => (loja === "Todas" ? ENTREVISTAS : ENTREVISTAS.filter((e) => e.loja === loja)),
-    [loja],
+    () => (registros.length ? registros : ENTREVISTAS),
+    [registros],
   );
 
   const total = dados.length;
@@ -169,20 +182,6 @@ function Dashboard() {
               Respostas coletadas entre 23 e 26 de janeiro de 2026.
             </p>
           </div>
-          <label className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Franquia / Loja
-            <select
-              value={loja}
-              onChange={(ev) => setLoja(ev.target.value)}
-              className="min-w-52 rounded-xl border border-border bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-card-foreground outline-none focus:ring-2 focus:ring-ring"
-            >
-              {lojas.map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </label>
         </header>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

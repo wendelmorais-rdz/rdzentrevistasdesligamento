@@ -291,7 +291,7 @@ function Dashboard() {
           subtitle="Clique em uma pessoa para ler os comentários completos"
           className="mt-6"
         >
-          <ul className="divide-y divide-border">
+          <ul className="max-h-[28rem] divide-y divide-border overflow-y-auto pr-1">
             {dados.map((e) => {
               const aberto = aberta === e.nome;
               return (

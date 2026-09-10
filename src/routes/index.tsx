@@ -502,10 +502,20 @@ function AnaliseSugestoes({ total }: { total: number }) {
     atencao: "bg-regular",
     positivo: "bg-bom",
   };
+  const corTexto: Record<Sentimento, string> = {
+    critico: "text-insuficiente",
+    atencao: "text-regular",
+    positivo: "text-bom",
+  };
   const rotulo: Record<Sentimento, string> = {
     critico: "Crítico",
     atencao: "Atenção",
     positivo: "Preservar",
+  };
+  const icone: Record<Sentimento, React.ReactNode> = {
+    critico: <AlertOctagon className="size-5" />,
+    atencao: <AlertTriangle className="size-5" />,
+    positivo: <CheckCircle2 className="size-5" />,
   };
 
   return (

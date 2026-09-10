@@ -384,7 +384,7 @@ function AnaliseSugestoes({ total }: { total: number }) {
     >
       <div className="grid gap-3 sm:grid-cols-4">
         {[
-          ["Respondentes", LEITURA_SUGESTOES.respondentes],
+          ["Respondentes", total],
           ["Sugestões acionáveis", LEITURA_SUGESTOES.comSugestaoAcionavel],
           ["Elogio no lugar de sugestão", LEITURA_SUGESTOES.elogioNoLugarDeSugestao],
           ["Sem sugestão", LEITURA_SUGESTOES.semSugestao],

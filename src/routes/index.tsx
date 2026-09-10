@@ -8,6 +8,7 @@ import {
   type Entrevista,
   type Nota,
 } from "@/data/entrevistas";
+import { LEITURA_SUGESTOES, TEMAS, type Sentimento } from "@/data/analise";
 
 export const Route = createFileRoute("/")({
   head: () => ({

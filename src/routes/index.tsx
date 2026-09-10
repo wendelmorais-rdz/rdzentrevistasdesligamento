@@ -112,7 +112,10 @@ function Dashboard() {
   const [aberta, setAberta] = useState<string | null>(null);
 
   const dados: Entrevista[] = useMemo(
-    () => (registros.length ? registros : ENTREVISTAS),
+    () =>
+      [...(registros.length ? registros : ENTREVISTAS)].sort((a, b) =>
+        b.data.localeCompare(a.data),
+      ),
     [registros],
   );
 
@@ -289,7 +292,7 @@ function Dashboard() {
           </div>
         </div>
 
-        <AnaliseSugestoes />
+        <AnaliseSugestoes total={dados.length} />
 
 
         <Card
@@ -361,7 +364,7 @@ function Dashboard() {
   );
 }
 
-function AnaliseSugestoes() {
+function AnaliseSugestoes({ total }: { total: number }) {
   const [ativo, setAtivo] = useState<string>(TEMAS[0]!.id);
   const tema = TEMAS.find((t) => t.id === ativo) ?? TEMAS[0]!;
 
@@ -384,7 +387,7 @@ function AnaliseSugestoes() {
     >
       <div className="grid gap-3 sm:grid-cols-4">
         {[
-          ["Respondentes", LEITURA_SUGESTOES.respondentes],
+          ["Respondentes", total],
           ["Sugestões acionáveis", LEITURA_SUGESTOES.comSugestaoAcionavel],
           ["Elogio no lugar de sugestão", LEITURA_SUGESTOES.elogioNoLugarDeSugestao],
           ["Sem sugestão", LEITURA_SUGESTOES.semSugestao],

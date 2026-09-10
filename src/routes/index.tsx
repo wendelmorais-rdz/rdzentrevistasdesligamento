@@ -8,6 +8,7 @@ import {
   type Entrevista,
   type Nota,
 } from "@/data/entrevistas";
+import { LEITURA_SUGESTOES, TEMAS, type Sentimento } from "@/data/analise";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -283,6 +284,9 @@ function Dashboard() {
           </div>
         </div>
 
+        <AnaliseSugestoes />
+
+
         <Card
           title="Entrevistas individuais"
           subtitle="Clique em uma pessoa para ler os comentários completos"
@@ -349,6 +353,140 @@ function Dashboard() {
         </Card>
       </div>
     </main>
+  );
+}
+
+function AnaliseSugestoes() {
+  const [ativo, setAtivo] = useState<string>(TEMAS[0]!.id);
+  const tema = TEMAS.find((t) => t.id === ativo) ?? TEMAS[0]!;
+
+  const cor: Record<Sentimento, string> = {
+    critico: "bg-insuficiente",
+    atencao: "bg-regular",
+    positivo: "bg-bom",
+  };
+  const rotulo: Record<Sentimento, string> = {
+    critico: "Crítico",
+    atencao: "Atenção",
+    positivo: "Preservar",
+  };
+
+  return (
+    <Card
+      title="Análise das sugestões de melhoria"
+      subtitle="Respostas abertas agrupadas por tema, cruzadas com a pergunta sobre saída evitável e com as notas por critério"
+      className="mt-6"
+    >
+      <div className="grid gap-3 sm:grid-cols-4">
+        {[
+          ["Respondentes", LEITURA_SUGESTOES.respondentes],
+          ["Sugestões acionáveis", LEITURA_SUGESTOES.comSugestaoAcionavel],
+          ["Elogio no lugar de sugestão", LEITURA_SUGESTOES.elogioNoLugarDeSugestao],
+          ["Sem sugestão", LEITURA_SUGESTOES.semSugestao],
+        ].map(([label, valor]) => (
+          <div key={String(label)} className="rounded-xl bg-secondary px-4 py-3">
+            <p className="font-display text-2xl font-semibold text-secondary-foreground">{valor}</p>
+            <p className="text-xs text-muted-foreground">{label}</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+        {LEITURA_SUGESTOES.observacao}
+      </p>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,18rem)_1fr]">
+        <ul className="space-y-2">
+          {TEMAS.map((t) => (
+            <li key={t.id}>
+              <button
+                onClick={() => setAtivo(t.id)}
+                className={`flex w-full items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                  t.id === ativo
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card hover:bg-secondary"
+                }`}
+              >
+                <span className={`mt-1.5 size-2.5 shrink-0 rounded-full ${cor[t.sentimento]}`} />
+                <span>
+                  <span className="block text-sm font-medium">{t.titulo}</span>
+                  <span
+                    className={`block text-xs ${t.id === ativo ? "opacity-80" : "text-muted-foreground"}`}
+                  >
+                    {t.pessoas.length}{" "}
+                    {t.pessoas.length === 1 ? "relato" : "relatos"} · {rotulo[t.sentimento]}
+                  </span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <div className="rounded-2xl border border-border bg-muted/50 p-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full px-2.5 py-1 text-xs font-semibold text-card ${cor[tema.sentimento]}`}
+            >
+              {rotulo[tema.sentimento]}
+            </span>
+            {tema.lojas.map((l) => (
+              <span
+                key={l}
+                className="rounded-full border border-border bg-card px-2.5 py-1 text-xs text-card-foreground"
+              >
+                {l}
+              </span>
+            ))}
+          </div>
+          <h3 className="mt-3 font-display text-lg font-semibold tracking-tight text-card-foreground">
+            {tema.titulo}
+          </h3>
+          <p className="mt-2 text-sm leading-relaxed text-card-foreground">{tema.resumo}</p>
+
+          <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            O que foi dito
+          </p>
+          <div className="mt-2 space-y-3">
+            {tema.citacoes.map((c) => (
+              <blockquote
+                key={c.texto}
+                className="rounded-xl border-l-2 border-accent bg-card px-4 py-3 text-sm leading-relaxed text-card-foreground"
+              >
+                “{c.texto}”
+                <footer className="mt-1.5 text-xs text-muted-foreground">
+                  {c.autor} · {c.origem}
+                </footer>
+              </blockquote>
+            ))}
+          </div>
+
+          <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Critérios impactados
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {tema.criteriosLigados.map((c) => (
+              <span
+                key={c}
+                className="rounded-lg border border-border bg-card px-2.5 py-1 text-xs text-card-foreground"
+              >
+                {c}
+              </span>
+            ))}
+          </div>
+
+          <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Ações recomendadas
+          </p>
+          <ul className="mt-2 space-y-2">
+            {tema.acoes.map((a) => (
+              <li key={a} className="flex gap-2 text-sm leading-relaxed text-card-foreground">
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent" />
+                {a}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </Card>
   );
 }
 

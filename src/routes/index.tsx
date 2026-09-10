@@ -10,6 +10,8 @@ import {
 } from "@/data/entrevistas";
 import { LEITURA_SUGESTOES, TEMAS, type Sentimento } from "@/data/analise";
 import { listarEntrevistas } from "@/lib/entrevistas.functions";
+import { gerarAnalise } from "@/lib/analise.functions";
+import { useQuery } from "@tanstack/react-query";
 import rdzSimbolo from "@/assets/rdz-simbolo.png.asset.json";
 
 export const Route = createFileRoute("/")({
@@ -365,8 +367,25 @@ function Dashboard() {
 }
 
 function AnaliseSugestoes({ total }: { total: number }) {
-  const [ativo, setAtivo] = useState<string>(TEMAS[0]!.id);
-  const tema = TEMAS.find((t) => t.id === ativo) ?? TEMAS[0]!;
+  const { data, isFetching, error, refetch } = useQuery({
+    queryKey: ["analise-sugestoes"],
+    queryFn: () => gerarAnalise(),
+    staleTime: 1000 * 60 * 30,
+    retry: false,
+  });
+
+  const temas = data?.temas?.length ? data.temas : TEMAS;
+  const leitura = data
+    ? {
+        comSugestaoAcionavel: data.comSugestaoAcionavel,
+        elogioNoLugarDeSugestao: data.elogioNoLugarDeSugestao,
+        semSugestao: data.semSugestao,
+        observacao: data.observacao,
+      }
+    : LEITURA_SUGESTOES;
+
+  const [ativo, setAtivo] = useState<string>("");
+  const tema = temas.find((t) => t.id === ativo) ?? temas[0]!;
 
   const cor: Record<Sentimento, string> = {
     critico: "bg-insuficiente",
@@ -385,12 +404,31 @@ function AnaliseSugestoes({ total }: { total: number }) {
       subtitle="Respostas abertas agrupadas por tema, cruzadas com a pergunta sobre saída evitável e com as notas por critério"
       className="mt-6"
     >
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <button
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+        >
+          {isFetching ? "Analisando…" : "Refazer análise"}
+        </button>
+        <span className="text-xs text-muted-foreground">
+          {isFetching
+            ? "Lendo todas as respostas abertas…"
+            : error
+              ? "Não foi possível gerar a análise agora — exibindo a última análise salva."
+              : data
+                ? `Análise gerada automaticamente em ${new Date(data.geradoEm).toLocaleString("pt-BR")}`
+                : "Exibindo a análise salva."}
+        </span>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-4">
         {[
           ["Respondentes", total],
-          ["Sugestões acionáveis", LEITURA_SUGESTOES.comSugestaoAcionavel],
-          ["Elogio no lugar de sugestão", LEITURA_SUGESTOES.elogioNoLugarDeSugestao],
-          ["Sem sugestão", LEITURA_SUGESTOES.semSugestao],
+          ["Sugestões acionáveis", leitura.comSugestaoAcionavel],
+          ["Elogio no lugar de sugestão", leitura.elogioNoLugarDeSugestao],
+          ["Sem sugestão", leitura.semSugestao],
         ].map(([label, valor]) => (
           <div key={String(label)} className="rounded-xl bg-secondary px-4 py-3">
             <p className="font-display text-2xl font-semibold text-secondary-foreground">{valor}</p>
@@ -398,13 +436,12 @@ function AnaliseSugestoes({ total }: { total: number }) {
           </div>
         ))}
       </div>
-      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-        {LEITURA_SUGESTOES.observacao}
-      </p>
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{leitura.observacao}</p>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,18rem)_1fr]">
         <ul className="space-y-2">
-          {TEMAS.map((t) => (
+          {temas.map((t) => (
+
             <li key={t.id}>
               <button
                 onClick={() => setAtivo(t.id)}

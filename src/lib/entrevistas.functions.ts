@@ -79,19 +79,22 @@ export function mapearEntrevista(linha: LinhaEntrevista): Entrevista {
   };
 }
 
+export async function buscarEntrevistas(): Promise<Entrevista[]> {
+  const url = process.env["EXT_SUPABASE_URL"];
+  const key = process.env["EXT_SUPABASE_SERVICE_ROLE_KEY"];
+  if (!url || !key) return [];
+
+  const resposta = await fetch(
+    `${url}/rest/v1/Entrevistadesligamento?select=*&order=carimbo_data_hora.desc`,
+    { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+  );
+  if (!resposta.ok) return [];
+
+  const linhas = (await resposta.json()) as LinhaEntrevista[];
+  return Array.isArray(linhas) ? linhas.map(mapearEntrevista) : [];
+}
+
 export const listarEntrevistas = createServerFn({ method: "GET" }).handler(
-  async (): Promise<Entrevista[]> => {
-    const url = process.env["EXT_SUPABASE_URL"];
-    const key = process.env["EXT_SUPABASE_SERVICE_ROLE_KEY"];
-    if (!url || !key) return [];
-
-    const resposta = await fetch(
-      `${url}/rest/v1/Entrevistadesligamento?select=*&order=carimbo_data_hora.desc`,
-      { headers: { apikey: key, Authorization: `Bearer ${key}` } },
-    );
-    if (!resposta.ok) return [];
-
-    const linhas = (await resposta.json()) as LinhaEntrevista[];
-    return Array.isArray(linhas) ? linhas.map(mapearEntrevista) : [];
-  },
+  async (): Promise<Entrevista[]> => buscarEntrevistas(),
 );
+

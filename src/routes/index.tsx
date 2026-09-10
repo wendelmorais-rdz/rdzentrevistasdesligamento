@@ -587,21 +587,23 @@ function AnaliseSugestoes({ total }: { total: number }) {
         </ul>
 
         <div className="rounded-2xl border border-border bg-muted/50 p-5">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {tema.lojas.map((l) => (
+                <span
+                  key={l}
+                  className="rounded-full border border-border bg-card px-2.5 py-1 text-xs text-card-foreground"
+                >
+                  {l}
+                </span>
+              ))}
+            </div>
             <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-card ${cor[tema.sentimento]}`}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-card ${cor[tema.sentimento]}`}
             >
               {icone[tema.sentimento]}
               {rotulo[tema.sentimento]}
             </span>
-            {tema.lojas.map((l) => (
-              <span
-                key={l}
-                className="rounded-full border border-border bg-card px-2.5 py-1 text-xs text-card-foreground"
-              >
-                {l}
-              </span>
-            ))}
           </div>
           <h3 className="mt-3 font-display text-lg font-semibold tracking-tight text-card-foreground">
             {tema.titulo}

@@ -86,7 +86,7 @@ export const listarEntrevistas = createServerFn({ method: "GET" }).handler(
     if (!url || !key) return [];
 
     const resposta = await fetch(
-      `${url}/rest/v1/Entrevistadesligamento?select=*&order=carimbo_data_hora.asc`,
+      `${url}/rest/v1/Entrevistadesligamento?select=*&order=carimbo_data_hora.desc`,
       { headers: { apikey: key, Authorization: `Bearer ${key}` } },
     );
     if (!resposta.ok) return [];

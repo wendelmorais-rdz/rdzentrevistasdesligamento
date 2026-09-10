@@ -289,7 +289,7 @@ function Dashboard() {
           </div>
         </div>
 
-        <AnaliseSugestoes />
+        <AnaliseSugestoes total={dados.length} />
 
 
         <Card

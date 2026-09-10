@@ -183,6 +183,11 @@ function Dashboard() {
               Respostas coletadas entre 23 e 26 de janeiro de 2026.
             </p>
           </div>
+          <img
+            src={rdzSimbolo.url}
+            alt="Símbolo Grupo RDZ"
+            className="h-14 w-auto object-contain sm:h-16"
+          />
         </header>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

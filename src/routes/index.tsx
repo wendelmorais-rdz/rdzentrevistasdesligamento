@@ -371,12 +371,22 @@ function Dashboard() {
             <Card
               title="Pessoas que pediram demissão"
               subtitle="Classificação geral dada à empresa"
+              badge={
+                <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+                  Avaliação Geral
+                </span>
+              }
             >
               <Pizza dados={dados.filter((e) => e.iniciativa === "Colaborador")} />
             </Card>
             <Card
               title="Pessoas que foram dispensadas"
               subtitle="Classificação geral dada à empresa"
+              badge={
+                <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+                  Avaliação Geral
+                </span>
+              }
             >
               <Pizza dados={dados.filter((e) => e.iniciativa !== "Colaborador")} />
             </Card>

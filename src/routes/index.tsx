@@ -72,11 +72,13 @@ const notaTexto: Record<Nota, string> = {
 function Card({
   title,
   subtitle,
+  badge,
   children,
   className = "",
 }: {
   title?: string;
   subtitle?: string;
+  badge?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -86,9 +88,12 @@ function Card({
     >
       {title && (
         <header className="mb-4">
-          <h2 className="font-display text-base font-semibold tracking-tight text-card-foreground">
-            {title}
-          </h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-display text-base font-semibold tracking-tight text-card-foreground">
+              {title}
+            </h2>
+            {badge}
+          </div>
           {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
         </header>
       )}

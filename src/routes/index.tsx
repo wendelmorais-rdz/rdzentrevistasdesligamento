@@ -9,6 +9,7 @@ import {
   type Nota,
 } from "@/data/entrevistas";
 import { LEITURA_SUGESTOES, TEMAS, type Sentimento } from "@/data/analise";
+import { listarEntrevistas } from "@/lib/entrevistas.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -164,20 +165,6 @@ function Dashboard() {
               Respostas coletadas entre 23 e 26 de janeiro de 2026.
             </p>
           </div>
-          <label className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Franquia / Loja
-            <select
-              value={loja}
-              onChange={(ev) => setLoja(ev.target.value)}
-              className="min-w-52 rounded-xl border border-border bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-card-foreground outline-none focus:ring-2 focus:ring-ring"
-            >
-              {lojas.map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </label>
         </header>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

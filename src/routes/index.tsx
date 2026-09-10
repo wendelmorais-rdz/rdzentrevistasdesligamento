@@ -143,7 +143,7 @@ function Dashboard() {
       .map((e) => {
         const p = (s: string) => {
           const m = s.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-          return m ? new Date(+m[3], +m[2] - 1, +m[1]) : null;
+          return m ? new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1])) : null;
         };
         const a = p(e.admissao);
         const d = p(e.demissao);

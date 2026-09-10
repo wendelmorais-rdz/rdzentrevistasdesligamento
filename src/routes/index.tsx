@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { AlertOctagon, AlertTriangle, CheckCircle2 } from "lucide-react";
 import {
   CRITERIOS,
   ENTREVISTAS,
@@ -501,10 +502,20 @@ function AnaliseSugestoes({ total }: { total: number }) {
     atencao: "bg-regular",
     positivo: "bg-bom",
   };
+  const corTexto: Record<Sentimento, string> = {
+    critico: "text-insuficiente",
+    atencao: "text-regular",
+    positivo: "text-bom",
+  };
   const rotulo: Record<Sentimento, string> = {
     critico: "Crítico",
     atencao: "Atenção",
     positivo: "Preservar",
+  };
+  const icone: Record<Sentimento, React.ReactNode> = {
+    critico: <AlertOctagon className="size-5" />,
+    atencao: <AlertTriangle className="size-5" />,
+    positivo: <CheckCircle2 className="size-5" />,
   };
 
   return (
@@ -578,8 +589,9 @@ function AnaliseSugestoes({ total }: { total: number }) {
         <div className="rounded-2xl border border-border bg-muted/50 p-5">
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`rounded-full px-2.5 py-1 text-xs font-semibold text-card ${cor[tema.sentimento]}`}
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-card ${cor[tema.sentimento]}`}
             >
+              {icone[tema.sentimento]}
               {rotulo[tema.sentimento]}
             </span>
             {tema.lojas.map((l) => (

@@ -30,6 +30,23 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: async () => {
+    try {
+      return await listarEntrevistas();
+    } catch {
+      return [] as Entrevista[];
+    }
+  },
+  errorComponent: () => (
+    <main className="grid min-h-screen place-items-center p-8 text-center text-sm text-muted-foreground">
+      Não foi possível carregar as entrevistas agora. Atualize a página em instantes.
+    </main>
+  ),
+  notFoundComponent: () => (
+    <main className="grid min-h-screen place-items-center p-8 text-sm text-muted-foreground">
+      Página não encontrada.
+    </main>
+  ),
   component: Dashboard,
 });
 

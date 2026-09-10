@@ -10,6 +10,7 @@ import {
 } from "@/data/entrevistas";
 import { LEITURA_SUGESTOES, TEMAS, type Sentimento } from "@/data/analise";
 import { listarEntrevistas } from "@/lib/entrevistas.functions";
+import rdzSimbolo from "@/assets/rdz-simbolo.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({

@@ -297,11 +297,11 @@ function Dashboard() {
         <AnaliseSugestoes total={dados.length} />
 
 
-        <Card
-          title="Entrevistas individuais"
-          subtitle="Clique em uma pessoa para ler os comentários completos"
-          className="mt-6"
-        >
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <Card
+            title="Entrevistas individuais"
+            subtitle="Clique em uma pessoa para ler os comentários completos"
+          >
           <ul className="max-h-[28rem] divide-y divide-border overflow-y-auto pr-1">
             {dados.map((e) => {
               const aberto = aberta === e.nome;
@@ -316,7 +316,7 @@ function Dashboard() {
                         {e.nome}
                       </span>
                       <span className="block text-xs text-muted-foreground">
-                        {e.funcao} · {e.loja} · {e.admissao} a {e.demissao}
+                        {e.funcao} · {e.loja} · {tempoDeCasa(e.admissao, e.demissao)}
                       </span>
                     </span>
                     <span className="flex items-center gap-3">
@@ -360,11 +360,105 @@ function Dashboard() {
               );
             })}
           </ul>
-        </Card>
+          </Card>
+
+          <div className="space-y-6">
+            <Card
+              title="Pessoas que pediram demissão"
+              subtitle="Classificação geral dada à empresa"
+            >
+              <Pizza dados={dados.filter((e) => e.iniciativa === "Colaborador")} />
+            </Card>
+            <Card
+              title="Pessoas que foram dispensadas"
+              subtitle="Classificação geral dada à empresa"
+            >
+              <Pizza dados={dados.filter((e) => e.iniciativa !== "Colaborador")} />
+            </Card>
+          </div>
+        </div>
       </div>
     </main>
   );
 }
+
+function tempoDeCasa(admissao: string, demissao: string) {
+  const p = (s: string) => {
+    const m = s.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    return m ? new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1])) : null;
+  };
+  const a = p(admissao);
+  const d = p(demissao);
+  if (!a || !d) return "Tempo de casa não informado";
+  const meses = Math.max(
+    0,
+    Math.round((d.getTime() - a.getTime()) / (1000 * 60 * 60 * 24 * 30.4)),
+  );
+  const anos = Math.floor(meses / 12);
+  const resto = meses % 12;
+  if (meses < 1) return "Menos de 1 mês de casa";
+  const partes = [
+    anos ? `${anos} ${anos === 1 ? "ano" : "anos"}` : null,
+    resto ? `${resto} ${resto === 1 ? "mês" : "meses"}` : null,
+  ].filter(Boolean);
+  return `${partes.join(" e ")} de casa`;
+}
+
+const notaCor: Record<Nota, string> = {
+  Excelente: "var(--excelente)",
+  Bom: "var(--bom)",
+  Regular: "var(--regular)",
+  Insuficiente: "var(--insuficiente)",
+};
+
+function Pizza({ dados }: { dados: Entrevista[] }) {
+  const total = dados.length;
+  if (!total) {
+    return <p className="text-sm text-muted-foreground">Sem registros neste grupo.</p>;
+  }
+
+  const fatias = NOTAS.map((nota) => {
+    const qtd = dados.filter((e) => e.notas["Classificação geral"] === nota).length;
+    return { nota, qtd, pct: (qtd / total) * 100 };
+  }).filter((f) => f.qtd > 0);
+
+  let acumulado = 0;
+  const stops = fatias
+    .map((f) => {
+      const inicio = acumulado;
+      acumulado += f.pct;
+      return `${notaCor[f.nota]} ${inicio}% ${acumulado}%`;
+    })
+    .join(", ");
+
+  return (
+    <div className="flex flex-wrap items-center gap-6">
+      <div
+        className="size-32 shrink-0 rounded-full"
+        style={{ background: `conic-gradient(${stops})` }}
+        role="img"
+        aria-label={fatias.map((f) => `${f.nota} ${Math.round(f.pct)}%`).join(", ")}
+      />
+      <ul className="space-y-1.5 text-xs">
+        {fatias.map((f) => (
+          <li key={f.nota} className="flex items-center gap-2 text-muted-foreground">
+            <span
+              className="size-2.5 rounded-full"
+              style={{ background: notaCor[f.nota] }}
+            />
+            <span className="text-card-foreground">{f.nota}</span>
+            <span className="font-display font-semibold">{Math.round(f.pct)}%</span>
+            <span>({f.qtd})</span>
+          </li>
+        ))}
+      </ul>
+      <p className="w-full text-xs text-muted-foreground">
+        Base: {total} {total === 1 ? "pessoa" : "pessoas"}
+      </p>
+    </div>
+  );
+}
+
 
 function AnaliseSugestoes({ total }: { total: number }) {
   const { data, isFetching, error, refetch } = useQuery({

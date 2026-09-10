@@ -298,10 +298,9 @@ function Dashboard() {
 
 
         <Card
-          title="Entrevistas individuais"
-          subtitle="Clique em uma pessoa para ler os comentários completos"
-          className="mt-6"
-        >
+            title="Entrevistas individuais"
+            subtitle="Clique em uma pessoa para ler os comentários completos"
+          >
           <ul className="max-h-[28rem] divide-y divide-border overflow-y-auto pr-1">
             {dados.map((e) => {
               const aberto = aberta === e.nome;

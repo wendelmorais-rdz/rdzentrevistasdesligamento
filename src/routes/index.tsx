@@ -283,6 +283,9 @@ function Dashboard() {
           </div>
         </div>
 
+        <AnaliseSugestoes />
+
+
         <Card
           title="Entrevistas individuais"
           subtitle="Clique em uma pessoa para ler os comentários completos"

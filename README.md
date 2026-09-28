@@ -19,8 +19,8 @@ Crie um arquivo `.env` na raiz (não é versionado):
 | --- | --- |
 | `EXT_SUPABASE_URL` | URL do projeto Supabase com a tabela `Entrevistadesligamento` |
 | `EXT_SUPABASE_SERVICE_ROLE_KEY` | Chave de serviço desse projeto (somente servidor) |
-| `ANTHROPIC_API_KEY` | Chave da API da Anthropic, usada na análise por IA (opcional) |
-| `ANTHROPIC_MODEL` | Modelo da análise (opcional, padrão `claude-sonnet-5`) |
+| `OPENROUTER_API_KEY` | Chave da API do OpenRouter, usada na análise por IA (opcional) |
+| `OPENROUTER_MODEL` | Modelo da análise (opcional, padrão `openrouter/free`, que roteia para um modelo gratuito) |
 
 ## Build
 

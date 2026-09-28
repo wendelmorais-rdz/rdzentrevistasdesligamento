@@ -83,7 +83,7 @@ const INSTRUCOES =
 
 export const gerarAnalise = createServerFn({ method: "GET" }).handler(
   async (): Promise<AnaliseGerada | null> => {
-    const chave = process.env["ANTHROPIC_API_KEY"];
+    const chave = process.env["OPENROUTER_API_KEY"];
     if (!chave) return null;
 
     const entrevistas = await buscarEntrevistas();
@@ -102,26 +102,22 @@ export const gerarAnalise = createServerFn({ method: "GET" }).handler(
       indicaria: e.indicaria,
     }));
 
-    const resposta = await fetch("https://api.anthropic.com/v1/messages", {
+    const resposta = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": chave,
-        "anthropic-version": "2023-06-01",
+        Authorization: `Bearer ${chave}`,
       },
       body: JSON.stringify({
-        model: process.env["ANTHROPIC_MODEL"] ?? "claude-sonnet-5",
-        max_tokens: 8000,
-        system: INSTRUCOES,
-        messages: [{ role: "user", content: JSON.stringify(material, null, 2) }],
-        tools: [
-          {
-            name: "registrar_analise",
-            description: "Registra a análise estruturada das entrevistas de desligamento.",
-            input_schema: schema,
-          },
+        model: process.env["OPENROUTER_MODEL"] ?? "openrouter/free",
+        messages: [
+          { role: "system", content: INSTRUCOES },
+          { role: "user", content: JSON.stringify(material, null, 2) },
         ],
-        tool_choice: { type: "tool", name: "registrar_analise" },
+        response_format: {
+          type: "json_schema",
+          json_schema: { name: "analise_desligamento", strict: true, schema },
+        },
       }),
     });
 
@@ -131,12 +127,12 @@ export const gerarAnalise = createServerFn({ method: "GET" }).handler(
     }
 
     const json = (await resposta.json()) as {
-      content?: { type: string; input?: unknown }[];
+      choices?: { message?: { content?: string } }[];
     };
-    const resultado = json.content?.find((bloco) => bloco.type === "tool_use")?.input;
-    if (!resultado) return null;
+    const conteudo = json.choices?.[0]?.message?.content;
+    if (!conteudo) return null;
 
-    const bruto = resultado as Omit<AnaliseGerada, "respondentes" | "geradoEm">;
+    const bruto = JSON.parse(conteudo) as Omit<AnaliseGerada, "respondentes" | "geradoEm">;
     const temas = (bruto.temas ?? []).filter((t) => t.titulo && t.resumo);
     if (!temas.length) return null;
 

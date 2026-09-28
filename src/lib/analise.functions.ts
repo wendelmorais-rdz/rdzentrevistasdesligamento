@@ -73,9 +73,17 @@ const schema = {
   },
 } as const;
 
+const INSTRUCOES =
+  "Você é analista de RH. Analise entrevistas de desligamento em português do Brasil, com foco na pergunta 'O que você deixaria como sugestão para o processo de melhoria da empresa?', cruzando com 'Sua saída poderia ter sido evitada?' e com as notas por critério. " +
+  "Agrupe as respostas abertas em 4 a 8 temas, do mais crítico ao positivo. Use apenas informações presentes nos dados. " +
+  "As citações devem ser trechos literais das respostas (pode encurtar, nunca inventar), com 'origem' igual a 'Sugestão de melhoria', 'Saída evitável' ou 'Indicaria a empresa'. " +
+  "Em 'acoes', escreva de 2 a 3 ações concretas e mensuráveis. " +
+  "Conte quantas pessoas deixaram sugestão acionável, quantas apenas elogiaram e quantas não deixaram sugestão. " +
+  "'id' deve ser um slug curto e único sem acentos.";
+
 export const gerarAnalise = createServerFn({ method: "GET" }).handler(
   async (): Promise<AnaliseGerada | null> => {
-    const chave = process.env["LOVABLE_API_KEY"];
+    const chave = process.env["ANTHROPIC_API_KEY"];
     if (!chave) return null;
 
     const entrevistas = await buscarEntrevistas();
@@ -94,32 +102,26 @@ export const gerarAnalise = createServerFn({ method: "GET" }).handler(
       indicaria: e.indicaria,
     }));
 
-    const resposta = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const resposta = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Lovable-API-Key": chave,
-        "X-Lovable-AIG-SDK": "fetch",
+        "x-api-key": chave,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "google/gemini-3.8-flash",
-        messages: [
+        model: process.env["ANTHROPIC_MODEL"] ?? "claude-sonnet-5",
+        max_tokens: 8000,
+        system: INSTRUCOES,
+        messages: [{ role: "user", content: JSON.stringify(material, null, 2) }],
+        tools: [
           {
-            role: "system",
-            content:
-              "Você é analista de RH. Analise entrevistas de desligamento em português do Brasil, com foco na pergunta 'O que você deixaria como sugestão para o processo de melhoria da empresa?', cruzando com 'Sua saída poderia ter sido evitada?' e com as notas por critério. " +
-              "Agrupe as respostas abertas em 4 a 8 temas, do mais crítico ao positivo. Use apenas informações presentes nos dados. " +
-              "As citações devem ser trechos literais das respostas (pode encurtar, nunca inventar), com 'origem' igual a 'Sugestão de melhoria', 'Saída evitável' ou 'Indicaria a empresa'. " +
-              "Em 'acoes', escreva de 2 a 3 ações concretas e mensuráveis. " +
-              "Conte quantas pessoas deixaram sugestão acionável, quantas apenas elogiaram e quantas não deixaram sugestão. " +
-              "'id' deve ser um slug curto e único sem acentos.",
+            name: "registrar_analise",
+            description: "Registra a análise estruturada das entrevistas de desligamento.",
+            input_schema: schema,
           },
-          { role: "user", content: JSON.stringify(material, null, 2) },
         ],
-        response_format: {
-          type: "json_schema",
-          json_schema: { name: "analise_desligamento", strict: true, schema },
-        },
+        tool_choice: { type: "tool", name: "registrar_analise" },
       }),
     });
 
@@ -129,12 +131,12 @@ export const gerarAnalise = createServerFn({ method: "GET" }).handler(
     }
 
     const json = (await resposta.json()) as {
-      choices?: { message?: { content?: string } }[];
+      content?: { type: string; input?: unknown }[];
     };
-    const conteudo = json.choices?.[0]?.message?.content;
-    if (!conteudo) return null;
+    const resultado = json.content?.find((bloco) => bloco.type === "tool_use")?.input;
+    if (!resultado) return null;
 
-    const bruto = JSON.parse(conteudo) as Omit<AnaliseGerada, "respondentes" | "geradoEm">;
+    const bruto = resultado as Omit<AnaliseGerada, "respondentes" | "geradoEm">;
     const temas = (bruto.temas ?? []).filter((t) => t.titulo && t.resumo);
     if (!temas.length) return null;
 

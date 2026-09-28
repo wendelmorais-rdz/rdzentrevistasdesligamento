@@ -1,26 +1,31 @@
-# Exit Insights Dashboard
+# Painel de Entrevistas de Desligamento — Grupo RDZ
 
-preciso criar uma dashboard com url para exibir os dados obtidos nestas entrevistas de desligamento.
+Dashboard com os indicadores de RH obtidos nas entrevistas de desligamento.
 
-This project was built with [Lovable](https://lovable.dev).
+## Desenvolvimento
 
-**Live app**: https://farewell-data-vue.lovable.app
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/771282db-740c-4e64-afeb-2e6cbf62625d).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Requer Node.js 22+.
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+npm install
 npm run dev
 ```
+
+## Variáveis de ambiente
+
+Crie um arquivo `.env` na raiz (não é versionado):
+
+| Variável | Uso |
+| --- | --- |
+| `EXT_SUPABASE_URL` | URL do projeto Supabase com a tabela `Entrevistadesligamento` |
+| `EXT_SUPABASE_SERVICE_ROLE_KEY` | Chave de serviço desse projeto (somente servidor) |
+| `ANTHROPIC_API_KEY` | Chave da API da Anthropic, usada na análise por IA (opcional) |
+| `ANTHROPIC_MODEL` | Modelo da análise (opcional, padrão `claude-sonnet-5`) |
+
+## Build
+
+```sh
+npm run build
+```
+
+O build usa Nitro; sem `NITRO_PRESET`, gera um servidor Node em `.output/`.

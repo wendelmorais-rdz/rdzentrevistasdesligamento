@@ -102,24 +102,41 @@ export const gerarAnalise = createServerFn({ method: "GET" }).handler(
       indicaria: e.indicaria,
     }));
 
-    const resposta = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${chave}`,
-      },
-      body: JSON.stringify({
-        model: process.env["OPENROUTER_MODEL"] ?? "openrouter/free",
-        messages: [
-          { role: "system", content: INSTRUCOES },
-          { role: "user", content: JSON.stringify(material, null, 2) },
-        ],
-        response_format: {
-          type: "json_schema",
-          json_schema: { name: "analise_desligamento", strict: true, schema },
+    // O roteador gratuito do OpenRouter pode ficar sem responder por minutos;
+    // sem um limite de tempo aqui, o fetch trava para sempre e a UI nunca sai
+    // do estado "Analisando…".
+    const controlador = new AbortController();
+    const tempoEsgotado = setTimeout(() => controlador.abort(), 60_000);
+
+    let resposta: Response;
+    try {
+      resposta = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${chave}`,
         },
-      }),
-    });
+        body: JSON.stringify({
+          model: process.env["OPENROUTER_MODEL"] ?? "openrouter/free",
+          messages: [
+            { role: "system", content: INSTRUCOES },
+            { role: "user", content: JSON.stringify(material, null, 2) },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: { name: "analise_desligamento", strict: true, schema },
+          },
+        }),
+        signal: controlador.signal,
+      });
+    } catch (erro) {
+      if (erro instanceof Error && erro.name === "AbortError") {
+        throw new Error("A análise demorou demais para responder (mais de 60s). Tente novamente.");
+      }
+      throw erro;
+    } finally {
+      clearTimeout(tempoEsgotado);
+    }
 
     if (!resposta.ok) {
       const detalhe = await resposta.text();

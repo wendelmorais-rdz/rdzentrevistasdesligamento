@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertOctagon, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertOctagon, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import {
   CRITERIOS,
   ENTREVISTAS,
@@ -526,10 +527,26 @@ function AnaliseSugestoes({ total }: { total: number }) {
     >
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <button
-          onClick={() => refetch()}
+          onClick={() => {
+            toast.promise(
+              refetch().then((resultado) => {
+                if (resultado.error) throw resultado.error;
+                return resultado.data;
+              }),
+              {
+                loading: "⏳ Lendo todas as respostas abertas e gerando a análise…",
+                success: "✅ Análise atualizada com sucesso!",
+                error: (erro) =>
+                  `⚠️ Não foi possível gerar a análise: ${
+                    erro instanceof Error ? erro.message : "erro desconhecido"
+                  }`,
+              },
+            );
+          }}
           disabled={isFetching}
-          className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
         >
+          {isFetching && <Loader2 className="size-4 animate-spin" />}
           {isFetching ? "Analisando…" : "Refazer análise"}
         </button>
         <span className="text-xs text-muted-foreground">

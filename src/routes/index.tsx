@@ -70,6 +70,15 @@ function corPorMedia(media: number): string {
   return "bg-insuficiente";
 }
 
+// Aqui é o inverso de corPorMedia: quanto maior o % evitável, pior (mais
+// saídas que poderiam ter sido evitadas).
+function corPorPctEvitavel(pct: number): string {
+  if (pct === 0) return "bg-excelente";
+  if (pct < 33) return "bg-bom";
+  if (pct < 66) return "bg-regular";
+  return "bg-insuficiente";
+}
+
 const notaTexto: Record<Nota, string> = {
   Excelente: "text-excelente",
   Bom: "text-bom",
@@ -183,13 +192,10 @@ function Dashboard() {
       .map(([motivo, entrevistas]) => ({
         motivo,
         qtd: entrevistas.length,
-        mediaGeral:
-          entrevistas.reduce((a, e) => a + PESO[e.notas["Classificação geral"]], 0) /
-          entrevistas.length,
         pctEvitavel:
           (entrevistas.filter((e) => pareceSim(e.evitavel)).length / entrevistas.length) * 100,
       }))
-      .sort((a, b) => a.mediaGeral - b.mediaGeral);
+      .sort((a, b) => b.pctEvitavel - a.pctEvitavel);
   }, [dados]);
 
   const tempoPorMotivoColaborador = useMemo(() => {
@@ -356,23 +362,23 @@ function Dashboard() {
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <Card
             title="Motivo × avaliação"
-            subtitle="Nota média geral e % de saída evitável, por motivo declarado"
+            subtitle="% de saída evitável, por motivo declarado"
           >
             <div className="space-y-3">
-              {cruzamentoMotivo.map(({ motivo, qtd, mediaGeral, pctEvitavel }) => (
+              {cruzamentoMotivo.map(({ motivo, qtd, pctEvitavel }) => (
                 <div key={motivo}>
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="text-sm text-card-foreground">
                       {motivo} <span className="text-xs text-muted-foreground">({qtd})</span>
                     </span>
                     <span className="shrink-0 font-display text-xs font-semibold text-muted-foreground">
-                      {mediaGeral.toFixed(1)} / 4 · {Math.round(pctEvitavel)}% evitável
+                      {Math.round(pctEvitavel)}% evitável
                     </span>
                   </div>
                   <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-muted">
                     <div
-                      className={`h-full rounded-full ${corPorMedia(mediaGeral)}`}
-                      style={{ width: `${(mediaGeral / 4) * 100}%` }}
+                      className={`h-full rounded-full ${corPorPctEvitavel(pctEvitavel)}`}
+                      style={{ width: `${pctEvitavel}%` }}
                     />
                   </div>
                 </div>

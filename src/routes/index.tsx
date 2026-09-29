@@ -14,7 +14,6 @@ import { LEITURA_SUGESTOES, TEMAS, type Sentimento } from "@/data/analise";
 import { listarEntrevistas } from "@/lib/entrevistas.functions";
 import { gerarAnalise } from "@/lib/analise.functions";
 import { useQuery } from "@tanstack/react-query";
-import rdzSimbolo from "@/assets/rdz-simbolo.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -63,6 +62,13 @@ const notaClasse: Record<Nota, string> = {
   Regular: "bg-regular",
   Insuficiente: "bg-insuficiente",
 };
+
+function corPorMedia(media: number): string {
+  if (media >= 3.5) return "bg-excelente";
+  if (media >= 2.5) return "bg-bom";
+  if (media >= 1.5) return "bg-regular";
+  return "bg-insuficiente";
+}
 
 const notaTexto: Record<Nota, string> = {
   Excelente: "text-excelente",
@@ -165,6 +171,52 @@ function Dashboard() {
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
   }, [dados]);
 
+  const pareceSim = (texto: string) => /^sim/i.test(texto.trim());
+
+  const cruzamentoMotivo = useMemo(() => {
+    const grupos = new Map<string, Entrevista[]>();
+    dados.forEach((e) => {
+      const k = e.motivo ?? "Não informado (dispensa pelo empregador)";
+      grupos.set(k, [...(grupos.get(k) ?? []), e]);
+    });
+    return Array.from(grupos.entries())
+      .map(([motivo, entrevistas]) => ({
+        motivo,
+        qtd: entrevistas.length,
+        mediaGeral:
+          entrevistas.reduce((a, e) => a + PESO[e.notas["Classificação geral"]], 0) /
+          entrevistas.length,
+        pctEvitavel:
+          (entrevistas.filter((e) => pareceSim(e.evitavel)).length / entrevistas.length) * 100,
+      }))
+      .sort((a, b) => a.mediaGeral - b.mediaGeral);
+  }, [dados]);
+
+  const tempoPorMotivoColaborador = useMemo(() => {
+    const parse = (s: string) => {
+      const m = s.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      return m ? new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1])) : null;
+    };
+    const grupos = new Map<string, number[]>();
+    dados
+      .filter((e) => e.iniciativa === "Colaborador")
+      .forEach((e) => {
+        const a = parse(e.admissao);
+        const d = parse(e.demissao);
+        if (!a || !d) return;
+        const meses = Math.max(0, (d.getTime() - a.getTime()) / (1000 * 60 * 60 * 24 * 30.4));
+        const k = e.motivo ?? "Não informado";
+        grupos.set(k, [...(grupos.get(k) ?? []), meses]);
+      });
+    return Array.from(grupos.entries())
+      .map(([motivo, lista]) => ({
+        motivo,
+        qtd: lista.length,
+        mesesMedio: lista.reduce((a, b) => a + b, 0) / lista.length,
+      }))
+      .sort((a, b) => a.mesesMedio - b.mesesMedio);
+  }, [dados]);
+
   const tempoMedio = useMemo(() => {
     const meses = dados
       .map((e) => {
@@ -196,9 +248,9 @@ function Dashboard() {
             </p>
           </div>
           <img
-            src={rdzSimbolo.url}
-            alt="Símbolo Grupo RDZ"
-            className="h-24 w-auto object-contain sm:h-28"
+            src="/logo-rdz.png"
+            alt="Logo Grupo RDZ"
+            className="h-16 w-auto object-contain sm:h-20"
           />
         </header>
 
@@ -301,6 +353,69 @@ function Dashboard() {
           </div>
         </div>
 
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <Card
+            title="Motivo × avaliação"
+            subtitle="Nota média geral e % de saída evitável, por motivo declarado"
+          >
+            <div className="space-y-3">
+              {cruzamentoMotivo.map(({ motivo, qtd, mediaGeral, pctEvitavel }) => (
+                <div key={motivo}>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-sm text-card-foreground">
+                      {motivo} <span className="text-xs text-muted-foreground">({qtd})</span>
+                    </span>
+                    <span className="shrink-0 font-display text-xs font-semibold text-muted-foreground">
+                      {mediaGeral.toFixed(1)} / 4 · {Math.round(pctEvitavel)}% evitável
+                    </span>
+                  </div>
+                  <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={`h-full rounded-full ${corPorMedia(mediaGeral)}`}
+                      style={{ width: `${(mediaGeral / 4) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card
+            title="Tempo de casa × motivo"
+            subtitle="Tempo médio de casa por motivo declarado, entre quem pediu demissão"
+          >
+            {tempoPorMotivoColaborador.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhum pedido de demissão com datas de admissão e demissão preenchidas ainda.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {(() => {
+                  const maxMeses = Math.max(1, ...tempoPorMotivoColaborador.map((g) => g.mesesMedio));
+                  return tempoPorMotivoColaborador.map(({ motivo, qtd, mesesMedio }) => (
+                    <div key={motivo}>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-sm text-card-foreground">
+                          {motivo} <span className="text-xs text-muted-foreground">({qtd})</span>
+                        </span>
+                        <span className="shrink-0 font-display text-xs font-semibold text-muted-foreground">
+                          {formatarMeses(mesesMedio)}
+                        </span>
+                      </div>
+                      <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${(mesesMedio / maxMeses) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            )}
+          </Card>
+        </div>
+
         <AnaliseSugestoes total={dados.length} />
 
 
@@ -321,6 +436,9 @@ function Dashboard() {
                     <span>
                       <span className="block text-sm font-medium text-card-foreground">
                         {e.nome}
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          {formatarData(e.data)}
+                        </span>
                       </span>
                       <span className="block text-xs text-muted-foreground">
                         {e.funcao} · {e.loja} · {tempoDeCasa(e.admissao, e.demissao)}
@@ -399,6 +517,11 @@ function Dashboard() {
   );
 }
 
+function formatarData(iso: string): string {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : "Data não informada";
+}
+
 function tempoDeCasa(admissao: string, demissao: string) {
   const p = (s: string) => {
     const m = s.match(/(\d{2})\/(\d{2})\/(\d{4})/);
@@ -419,6 +542,18 @@ function tempoDeCasa(admissao: string, demissao: string) {
     resto ? `${resto} ${resto === 1 ? "mês" : "meses"}` : null,
   ].filter(Boolean);
   return `${partes.join(" e ")} de casa`;
+}
+
+function formatarMeses(meses: number): string {
+  const arredondado = Math.round(meses);
+  if (arredondado < 1) return "Menos de 1 mês";
+  const anos = Math.floor(arredondado / 12);
+  const resto = arredondado % 12;
+  const partes = [
+    anos ? `${anos} ${anos === 1 ? "ano" : "anos"}` : null,
+    resto ? `${resto} ${resto === 1 ? "mês" : "meses"}` : null,
+  ].filter(Boolean);
+  return partes.join(" e ");
 }
 
 const notaCor: Record<Nota, string> = {
@@ -560,6 +695,25 @@ function AnaliseSugestoes({ total }: { total: number }) {
         </span>
       </div>
 
+      {data && data.alertasUrgentes.length > 0 && (
+        <div className="mb-4 rounded-xl border border-insuficiente/40 bg-insuficiente/10 p-4">
+          <p className="flex items-center gap-2 text-sm font-semibold text-insuficiente">
+            <AlertOctagon className="size-4" />
+            {data.alertasUrgentes.length === 1
+              ? "1 caso precisa de atenção imediata do RH"
+              : `${data.alertasUrgentes.length} casos precisam de atenção imediata do RH`}
+          </p>
+          <ul className="mt-2 space-y-1.5">
+            {data.alertasUrgentes.map((a) => (
+              <li key={`${a.pessoa}-${a.resumo}`} className="text-sm leading-relaxed text-card-foreground">
+                <span className="font-medium">{a.pessoa}:</span> {a.resumo}{" "}
+                <span className="text-xs text-muted-foreground">({a.origem})</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-4">
         {[
           ["Respondentes", total],
@@ -582,18 +736,15 @@ function AnaliseSugestoes({ total }: { total: number }) {
             <li key={t.id}>
               <button
                 onClick={() => setAtivo(t.id)}
-                className={`flex w-full items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                className={`flex w-full items-start gap-3 rounded-xl border px-3 py-2.5 text-left text-black transition-colors ${cor[t.sentimento]} ${
                   t.id === ativo
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-card hover:bg-secondary"
+                    ? "border-black/60 ring-2 ring-black/30"
+                    : "border-transparent hover:opacity-90"
                 }`}
               >
-                <span className={`mt-1.5 size-2.5 shrink-0 rounded-full ${cor[t.sentimento]}`} />
                 <span>
-                  <span className="block text-sm font-medium">{t.titulo}</span>
-                  <span
-                    className={`block text-xs ${t.id === ativo ? "opacity-80" : "text-muted-foreground"}`}
-                  >
+                  <span className="block text-sm font-medium text-black">{t.titulo}</span>
+                  <span className="block text-xs text-black/70">
                     {t.pessoas.length}{" "}
                     {t.pessoas.length === 1 ? "relato" : "relatos"} · {rotulo[t.sentimento]}
                   </span>
@@ -671,6 +822,39 @@ function AnaliseSugestoes({ total }: { total: number }) {
           </ul>
         </div>
       </div>
+
+      {data && (data.recomendacao.motivosPositivos.length > 0 || data.recomendacao.motivosNegativos.length > 0) && (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-bom">
+              <CheckCircle2 className="size-4" />
+              Por que recomendariam / voltariam
+            </p>
+            <ul className="mt-2 space-y-1.5">
+              {data.recomendacao.motivosPositivos.map((m) => (
+                <li key={m} className="flex gap-2 text-sm leading-relaxed text-card-foreground">
+                  <span className="mt-2 size-1.5 shrink-0 rounded-full bg-bom" />
+                  {m}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-insuficiente">
+              <AlertTriangle className="size-4" />
+              Por que não recomendariam / não voltariam
+            </p>
+            <ul className="mt-2 space-y-1.5">
+              {data.recomendacao.motivosNegativos.map((m) => (
+                <li key={m} className="flex gap-2 text-sm leading-relaxed text-card-foreground">
+                  <span className="mt-2 size-1.5 shrink-0 rounded-full bg-insuficiente" />
+                  {m}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

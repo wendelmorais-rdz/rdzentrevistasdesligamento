@@ -2,6 +2,17 @@ import { createServerFn } from "@tanstack/react-start";
 import type { Sentimento, Tema } from "@/data/analise";
 import { buscarEntrevistas } from "@/lib/entrevistas.functions";
 
+export type MotivoRecomendacao = {
+  motivosPositivos: string[];
+  motivosNegativos: string[];
+};
+
+export type AlertaUrgente = {
+  pessoa: string;
+  resumo: string;
+  origem: string;
+};
+
 export type AnaliseGerada = {
   respondentes: number;
   comSugestaoAcionavel: number;
@@ -9,6 +20,8 @@ export type AnaliseGerada = {
   semSugestao: number;
   observacao: string;
   temas: Tema[];
+  recomendacao: MotivoRecomendacao;
+  alertasUrgentes: AlertaUrgente[];
   geradoEm: string;
 };
 
@@ -23,12 +36,36 @@ const schema = {
     "semSugestao",
     "observacao",
     "temas",
+    "recomendacao",
+    "alertasUrgentes",
   ],
   properties: {
     comSugestaoAcionavel: { type: "integer" },
     elogioNoLugarDeSugestao: { type: "integer" },
     semSugestao: { type: "integer" },
     observacao: { type: "string" },
+    recomendacao: {
+      type: "object",
+      additionalProperties: false,
+      required: ["motivosPositivos", "motivosNegativos"],
+      properties: {
+        motivosPositivos: { type: "array", items: { type: "string" } },
+        motivosNegativos: { type: "array", items: { type: "string" } },
+      },
+    },
+    alertasUrgentes: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["pessoa", "resumo", "origem"],
+        properties: {
+          pessoa: { type: "string" },
+          resumo: { type: "string" },
+          origem: { type: "string" },
+        },
+      },
+    },
     temas: {
       type: "array",
       items: {
@@ -76,10 +113,12 @@ const schema = {
 const INSTRUCOES =
   "Você é analista de RH. Analise entrevistas de desligamento em português do Brasil, com foco na pergunta 'O que você deixaria como sugestão para o processo de melhoria da empresa?', cruzando com 'Sua saída poderia ter sido evitada?' e com as notas por critério. " +
   "Agrupe as respostas abertas em 4 a 8 temas, do mais crítico ao positivo. Use apenas informações presentes nos dados. " +
-  "As citações devem ser trechos literais das respostas (pode encurtar, nunca inventar), com 'origem' igual a 'Sugestão de melhoria', 'Saída evitável' ou 'Indicaria a empresa'. " +
+  "As citações devem ser trechos literais das respostas (pode encurtar, nunca inventar), com 'origem' igual a 'Sugestão de melhoria', 'Saída evitável', 'Trabalharia novamente' ou 'Indicaria a empresa'. " +
   "Em 'acoes', escreva de 2 a 3 ações concretas e mensuráveis. " +
   "Conte quantas pessoas deixaram sugestão acionável, quantas apenas elogiaram e quantas não deixaram sugestão. " +
-  "'id' deve ser um slug curto e único sem acentos.";
+  "'id' deve ser um slug curto e único sem acentos. " +
+  "Em 'recomendacao', baseado nos campos 'trabalhariaNovamente' e 'indicaria', liste em 'motivosPositivos' de 3 a 6 motivos curtos (poucas palavras cada) mais citados por quem voltaria a trabalhar ou indicaria a empresa, e em 'motivosNegativos' de 3 a 6 motivos mais citados por quem não voltaria ou não indicaria. Use listas vazias se não houver dados suficientes para um dos lados — nunca invente motivo. " +
+  "Em 'alertasUrgentes', liste casos individuais (um por pessoa) que mencionem risco grave exigindo atenção imediata do RH — por exemplo assédio, discriminação, ilegalidade, ou risco à segurança física ou saúde mental. Cada item tem 'pessoa' (nome), 'resumo' (uma frase objetiva do relato) e 'origem' (de qual campo veio). Retorne lista vazia se nenhum caso presente nos dados se encaixar — não force um alerta que não existe.";
 
 export const gerarAnalise = createServerFn({ method: "GET" }).handler(
   async (): Promise<AnaliseGerada | null> => {
@@ -160,6 +199,11 @@ export const gerarAnalise = createServerFn({ method: "GET" }).handler(
       semSugestao: bruto.semSugestao ?? 0,
       observacao: bruto.observacao ?? "",
       temas,
+      recomendacao: {
+        motivosPositivos: bruto.recomendacao?.motivosPositivos ?? [],
+        motivosNegativos: bruto.recomendacao?.motivosNegativos ?? [],
+      },
+      alertasUrgentes: bruto.alertasUrgentes ?? [],
       geradoEm: new Date().toISOString(),
     };
   },

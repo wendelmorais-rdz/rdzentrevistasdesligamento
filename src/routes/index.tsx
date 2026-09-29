@@ -14,6 +14,17 @@ import { LEITURA_SUGESTOES, TEMAS, type Sentimento } from "@/data/analise";
 import { listarEntrevistas, excluirEntrevista } from "@/lib/entrevistas.functions";
 import { gerarAnalise, PERIODOS, type Periodo } from "@/lib/analise.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { buttonVariants } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -137,13 +148,10 @@ function Dashboard() {
   const queryClient = useQueryClient();
   const [aberta, setAberta] = useState<string | null>(null);
   const [excluindo, setExcluindo] = useState<string | null>(null);
+  const [alvoExclusao, setAlvoExclusao] = useState<Entrevista | null>(null);
 
   async function handleExcluir(entrevista: Entrevista) {
     if (!entrevista.id) return;
-    const confirmado = window.confirm(
-      `Excluir a entrevista de ${entrevista.nome}? Essa ação não pode ser desfeita.`,
-    );
-    if (!confirmado) return;
 
     setExcluindo(entrevista.id);
     try {
@@ -489,7 +497,7 @@ function Dashboard() {
                     </button>
                     {e.id && (
                       <button
-                        onClick={() => void handleExcluir(e)}
+                        onClick={() => setAlvoExclusao(e)}
                         disabled={excluindo === e.id}
                         title="Excluir entrevista"
                         aria-label={`Excluir entrevista de ${e.nome}`}
@@ -561,6 +569,30 @@ function Dashboard() {
           </div>
         </div>
       </div>
+
+      <AlertDialog open={!!alvoExclusao} onOpenChange={(open) => !open && setAlvoExclusao(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir esta entrevista?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A entrevista de <strong>{alvoExclusao?.nome}</strong> será apagada do banco de
+              dados permanentemente. Essa ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={() => {
+                if (alvoExclusao) void handleExcluir(alvoExclusao);
+                setAlvoExclusao(null);
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }

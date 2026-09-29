@@ -534,7 +534,7 @@ function AnaliseSugestoes({ total }: { total: number }) {
                 return resultado.data;
               }),
               {
-                loading: "⏳ Lendo todas as respostas abertas e gerando a análise…",
+                loading: "⏳ Analisando as respostas…",
                 success: "✅ Análise atualizada com sucesso!",
                 error: (erro) =>
                   `⚠️ Não foi possível gerar a análise: ${
@@ -551,7 +551,7 @@ function AnaliseSugestoes({ total }: { total: number }) {
         </button>
         <span className="text-xs text-muted-foreground">
           {isFetching
-            ? "Lendo todas as respostas abertas…"
+            ? "Analisando as respostas…"
             : error
               ? "Não foi possível gerar a análise agora — exibindo a última análise salva."
               : data

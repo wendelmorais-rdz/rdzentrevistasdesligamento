@@ -20,7 +20,7 @@ Crie um arquivo `.env` na raiz (não é versionado):
 | `EXT_SUPABASE_URL` | URL do projeto Supabase com a tabela `Entrevistadesligamento` |
 | `EXT_SUPABASE_SERVICE_ROLE_KEY` | Chave de serviço desse projeto (somente servidor) |
 | `OPENROUTER_API_KEY` | Chave da API do OpenRouter, usada na análise por IA (opcional) |
-| `OPENROUTER_MODEL` | Modelo da análise (opcional, padrão `openrouter/free`, que roteia para um modelo gratuito) |
+| `OPENROUTER_MODEL` | Modelo da análise (opcional, padrão `openrouter/free`, que roteia para um modelo gratuito). Recomendado: `openai/gpt-5-mini` — barato e mais consistente que o roteador gratuito. |
 
 ## Build
 

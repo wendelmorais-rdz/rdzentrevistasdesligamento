@@ -70,13 +70,13 @@ function corPorMedia(media: number): string {
   return "bg-insuficiente";
 }
 
-// Aqui é o inverso de corPorMedia: quanto maior o % evitável, pior (mais
-// saídas que poderiam ter sido evitadas).
+// % evitável alto é uma notícia boa: significa que a saída tinha solução ao
+// alcance da empresa. 0% evitável é o pior caso — ninguém viu como reter.
 function corPorPctEvitavel(pct: number): string {
-  if (pct === 0) return "bg-excelente";
-  if (pct < 33) return "bg-bom";
-  if (pct < 66) return "bg-regular";
-  return "bg-insuficiente";
+  if (pct === 0) return "bg-insuficiente";
+  if (pct < 33) return "bg-regular";
+  if (pct < 66) return "bg-bom";
+  return "bg-excelente";
 }
 
 const notaTexto: Record<Nota, string> = {
@@ -195,7 +195,7 @@ function Dashboard() {
         pctEvitavel:
           (entrevistas.filter((e) => pareceSim(e.evitavel)).length / entrevistas.length) * 100,
       }))
-      .sort((a, b) => b.pctEvitavel - a.pctEvitavel);
+      .sort((a, b) => a.pctEvitavel - b.pctEvitavel);
   }, [dados]);
 
   const tempoPorMotivoColaborador = useMemo(() => {
@@ -378,7 +378,7 @@ function Dashboard() {
                   <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-muted">
                     <div
                       className={`h-full rounded-full ${corPorPctEvitavel(pctEvitavel)}`}
-                      style={{ width: `${pctEvitavel}%` }}
+                      style={{ width: `${Math.max(pctEvitavel, 4)}%` }}
                     />
                   </div>
                 </div>

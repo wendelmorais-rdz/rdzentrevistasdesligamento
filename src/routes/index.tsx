@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertOctagon, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertOctagon, AlertTriangle, CheckCircle2, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   CRITERIOS,
@@ -11,9 +11,9 @@ import {
   type Nota,
 } from "@/data/entrevistas";
 import { LEITURA_SUGESTOES, TEMAS, type Sentimento } from "@/data/analise";
-import { listarEntrevistas } from "@/lib/entrevistas.functions";
-import { gerarAnalise } from "@/lib/analise.functions";
-import { useQuery } from "@tanstack/react-query";
+import { listarEntrevistas, excluirEntrevista } from "@/lib/entrevistas.functions";
+import { gerarAnalise, PERIODOS, type Periodo } from "@/lib/analise.functions";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -133,7 +133,32 @@ function Kpi({ label, value, hint }: { label: string; value: string; hint?: stri
 
 function Dashboard() {
   const registros = Route.useLoaderData();
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [aberta, setAberta] = useState<string | null>(null);
+  const [excluindo, setExcluindo] = useState<string | null>(null);
+
+  async function handleExcluir(entrevista: Entrevista) {
+    if (!entrevista.id) return;
+    const confirmado = window.confirm(
+      `Excluir a entrevista de ${entrevista.nome}? Essa ação não pode ser desfeita.`,
+    );
+    if (!confirmado) return;
+
+    setExcluindo(entrevista.id);
+    try {
+      await excluirEntrevista({ data: { id: entrevista.id } });
+      toast.success(`Entrevista de ${entrevista.nome} excluída.`);
+      await router.invalidate();
+      await queryClient.invalidateQueries({ queryKey: ["analise-sugestoes"] });
+    } catch (erro) {
+      toast.error(
+        `Não foi possível excluir: ${erro instanceof Error ? erro.message : "erro desconhecido"}`,
+      );
+    } finally {
+      setExcluindo(null);
+    }
+  }
 
   const dados: Entrevista[] = useMemo(
     () =>
@@ -434,33 +459,50 @@ function Dashboard() {
             {dados.map((e) => {
               const aberto = aberta === e.nome;
               return (
-                <li key={e.nome} className="py-3">
-                  <button
-                    onClick={() => setAberta(aberto ? null : e.nome)}
-                    className="flex w-full flex-wrap items-center justify-between gap-3 text-left"
-                  >
-                    <span>
-                      <span className="block text-sm font-medium text-card-foreground">
-                        {e.nome}
-                        <span className="ml-2 text-xs font-normal text-muted-foreground">
-                          {formatarData(e.data)}
+                <li key={e.id ?? e.nome} className="py-3">
+                  <div className="flex w-full items-center gap-2">
+                    <button
+                      onClick={() => setAberta(aberto ? null : e.nome)}
+                      className="flex flex-1 flex-wrap items-center justify-between gap-3 text-left"
+                    >
+                      <span>
+                        <span className="block text-sm font-medium text-card-foreground">
+                          {e.nome}
+                          <span className="ml-2 text-xs font-normal text-muted-foreground">
+                            {formatarData(e.data)}
+                          </span>
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {e.funcao} · {e.loja} · {tempoDeCasa(e.admissao, e.demissao)}
                         </span>
                       </span>
-                      <span className="block text-xs text-muted-foreground">
-                        {e.funcao} · {e.loja} · {tempoDeCasa(e.admissao, e.demissao)}
+                      <span className="flex items-center gap-3">
+                        <span
+                          className={`text-xs font-semibold ${notaTexto[e.notas["Classificação geral"]]}`}
+                        >
+                          {e.notas["Classificação geral"]}
+                        </span>
+                        <span className="rounded-full bg-secondary px-2.5 py-1 text-xs text-secondary-foreground">
+                          {e.iniciativa === "Colaborador" ? "Pediu demissão" : "Dispensa"}
+                        </span>
                       </span>
-                    </span>
-                    <span className="flex items-center gap-3">
-                      <span
-                        className={`text-xs font-semibold ${notaTexto[e.notas["Classificação geral"]]}`}
+                    </button>
+                    {e.id && (
+                      <button
+                        onClick={() => void handleExcluir(e)}
+                        disabled={excluindo === e.id}
+                        title="Excluir entrevista"
+                        aria-label={`Excluir entrevista de ${e.nome}`}
+                        className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-insuficiente/10 hover:text-insuficiente disabled:opacity-50"
                       >
-                        {e.notas["Classificação geral"]}
-                      </span>
-                      <span className="rounded-full bg-secondary px-2.5 py-1 text-xs text-secondary-foreground">
-                        {e.iniciativa === "Colaborador" ? "Pediu demissão" : "Dispensa"}
-                      </span>
-                    </span>
-                  </button>
+                        {excluindo === e.id ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="size-4" />
+                        )}
+                      </button>
+                    )}
+                  </div>
                   {aberto && (
                     <div className="mt-3 grid gap-4 rounded-xl bg-muted/60 p-4 text-sm sm:grid-cols-2">
                       <Bloco titulo="Poderia ter sido evitada?" texto={e.evitavel} />
@@ -618,10 +660,20 @@ function Pizza({ dados }: { dados: Entrevista[] }) {
 }
 
 
+const ROTULO_PERIODO: Record<Periodo, string> = {
+  todos: "Todos",
+  "30d": "30 dias",
+  "3m": "3 meses",
+  "6m": "6 meses",
+  ano: "Este ano",
+};
+
 function AnaliseSugestoes({ total }: { total: number }) {
+  const [periodo, setPeriodo] = useState<Periodo>("todos");
+
   const { data, isFetching, error, refetch } = useQuery({
-    queryKey: ["analise-sugestoes"],
-    queryFn: () => gerarAnalise(),
+    queryKey: ["analise-sugestoes", periodo],
+    queryFn: () => gerarAnalise({ data: { periodo } }),
     staleTime: 1000 * 60 * 30,
     retry: false,
   });
@@ -690,14 +742,32 @@ function AnaliseSugestoes({ total }: { total: number }) {
           {isFetching && <Loader2 className="size-4 animate-spin" />}
           {isFetching ? "Analisando…" : "Refazer análise"}
         </button>
+        <div className="flex flex-wrap gap-1.5">
+          {PERIODOS.map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriodo(p)}
+              disabled={isFetching}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors disabled:opacity-60 ${
+                periodo === p
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/70"
+              }`}
+            >
+              {ROTULO_PERIODO[p]}
+            </button>
+          ))}
+        </div>
         <span className="text-xs text-muted-foreground">
           {isFetching
             ? "Analisando as respostas…"
             : error
-              ? "Não foi possível gerar a análise agora — exibindo a última análise salva."
+              ? "Não foi possível gerar a análise agora — exibindo um exemplo."
               : data
                 ? `Análise gerada automaticamente em ${new Date(data.geradoEm).toLocaleString("pt-BR")}`
-                : "Exibindo a análise salva."}
+                : periodo !== "todos"
+                  ? "Sem entrevistas suficientes no período selecionado — exibindo um exemplo."
+                  : "Exibindo um exemplo."}
         </span>
       </div>
 
@@ -722,7 +792,7 @@ function AnaliseSugestoes({ total }: { total: number }) {
 
       <div className="grid gap-3 sm:grid-cols-4">
         {[
-          ["Respondentes", total],
+          ["Respondentes", data?.respondentes ?? total],
           ["Sugestões acionáveis", leitura.comSugestaoAcionavel],
           ["Elogio no lugar de sugestão", leitura.elogioNoLugarDeSugestao],
           ["Sem sugestão", leitura.semSugestao],

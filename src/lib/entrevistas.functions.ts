@@ -62,6 +62,7 @@ export function mapearEntrevista(linha: LinhaEntrevista): Entrevista {
   const solicitou = (linha.quem_solicitou_dispensa ?? "").toLowerCase();
 
   return {
+    ...(linha.carimbo_data_hora ? { id: linha.carimbo_data_hora } : {}),
     data: (linha.carimbo_data_hora ?? "").slice(0, 10),
     nome: limpar(linha.nome) ?? "Sem identificação",
     funcao: limpar(linha.funcao) ?? "—",
@@ -97,4 +98,30 @@ export async function buscarEntrevistas(): Promise<Entrevista[]> {
 export const listarEntrevistas = createServerFn({ method: "GET" }).handler(
   async (): Promise<Entrevista[]> => buscarEntrevistas(),
 );
+
+export const excluirEntrevista = createServerFn({ method: "POST" })
+  .validator((entrada: { id: string }) => entrada)
+  .handler(async ({ data: { id } }): Promise<{ ok: boolean }> => {
+    const url = process.env["EXT_SUPABASE_URL"];
+    const key = process.env["EXT_SUPABASE_SERVICE_ROLE_KEY"];
+    if (!url || !key) throw new Error("Banco não configurado.");
+    if (!id) throw new Error("Entrevista sem identificador — não é possível excluir.");
+
+    const resposta = await fetch(
+      `${url}/rest/v1/Entrevistadesligamento?carimbo_data_hora=eq.${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          Prefer: "return=minimal",
+        },
+      },
+    );
+    if (!resposta.ok) {
+      const detalhe = await resposta.text();
+      throw new Error(`Falha ao excluir (${resposta.status}): ${detalhe.slice(0, 300)}`);
+    }
+    return { ok: true };
+  });
 

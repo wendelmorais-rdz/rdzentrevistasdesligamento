@@ -1,6 +1,24 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { Sentimento, Tema } from "@/data/analise";
+import type { Entrevista } from "@/data/entrevistas";
 import { buscarEntrevistas } from "@/lib/entrevistas.functions";
+
+export const PERIODOS = ["todos", "30d", "3m", "6m", "ano"] as const;
+export type Periodo = (typeof PERIODOS)[number];
+
+function filtrarPorPeriodo(entrevistas: Entrevista[], periodo: Periodo): Entrevista[] {
+  if (periodo === "todos") return entrevistas;
+
+  const agora = new Date();
+  const inicio = new Date(agora);
+  if (periodo === "30d") inicio.setDate(inicio.getDate() - 30);
+  else if (periodo === "3m") inicio.setMonth(inicio.getMonth() - 3);
+  else if (periodo === "6m") inicio.setMonth(inicio.getMonth() - 6);
+  else inicio.setMonth(0, 1); // "ano": 1º de janeiro deste ano
+
+  const inicioIso = inicio.toISOString().slice(0, 10);
+  return entrevistas.filter((e) => e.data >= inicioIso);
+}
 
 export type MotivoRecomendacao = {
   motivosPositivos: string[];
@@ -120,12 +138,16 @@ const INSTRUCOES =
   "Em 'recomendacao', baseado nos campos 'trabalhariaNovamente' e 'indicaria', liste em 'motivosPositivos' de 3 a 6 motivos curtos (poucas palavras cada) mais citados por quem voltaria a trabalhar ou indicaria a empresa, e em 'motivosNegativos' de 3 a 6 motivos mais citados por quem não voltaria ou não indicaria. Use listas vazias se não houver dados suficientes para um dos lados — nunca invente motivo. " +
   "Em 'alertasUrgentes', liste casos individuais (um por pessoa) que mencionem risco grave exigindo atenção imediata do RH — por exemplo assédio, discriminação, ilegalidade, ou risco à segurança física ou saúde mental. Cada item tem 'pessoa' (nome), 'resumo' (uma frase objetiva do relato) e 'origem' (de qual campo veio). Retorne lista vazia se nenhum caso presente nos dados se encaixar — não force um alerta que não existe.";
 
-export const gerarAnalise = createServerFn({ method: "GET" }).handler(
-  async (): Promise<AnaliseGerada | null> => {
+export const gerarAnalise = createServerFn({ method: "GET" })
+  .validator((entrada: { periodo?: Periodo } | undefined): { periodo: Periodo } => {
+    const periodo = entrada?.periodo;
+    return { periodo: periodo && PERIODOS.includes(periodo) ? periodo : "todos" };
+  })
+  .handler(async ({ data: { periodo } }): Promise<AnaliseGerada | null> => {
     const chave = process.env["OPENROUTER_API_KEY"];
     if (!chave) return null;
 
-    const entrevistas = await buscarEntrevistas();
+    const entrevistas = filtrarPorPeriodo(await buscarEntrevistas(), periodo);
     if (!entrevistas.length) return null;
 
     const material = entrevistas.map((e) => ({

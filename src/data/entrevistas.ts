@@ -17,6 +17,9 @@ export const CRITERIOS = [
 export type Criterio = (typeof CRITERIOS)[number];
 
 export type Entrevista = {
+  /** carimbo_data_hora completo (timestamp), usado para localizar a linha no
+   * Supabase ao excluir. Ausente nos dados de exemplo estáticos. */
+  id?: string;
   data: string;
   nome: string;
   funcao: string;

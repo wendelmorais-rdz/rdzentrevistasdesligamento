@@ -1,6 +1,14 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertOctagon, AlertTriangle, CheckCircle2, Loader2, Trash2, Upload } from "lucide-react";
+import {
+  AlertOctagon,
+  AlertTriangle,
+  CheckCircle2,
+  ListChecks,
+  Loader2,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   CRITERIOS,
@@ -321,6 +329,8 @@ function Dashboard() {
           />
         </div>
 
+        <AnaliseSugestoes total={dados.length} />
+
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
           <Card
             title="Avaliação por critério"
@@ -463,9 +473,6 @@ function Dashboard() {
             )}
           </Card>
         </div>
-
-        <AnaliseSugestoes total={dados.length} />
-
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_22rem]">
           <Card
@@ -926,17 +933,22 @@ function AnaliseSugestoes({ total }: { total: number }) {
             ))}
           </div>
 
-          <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Ações recomendadas
-          </p>
-          <ul className="mt-2 space-y-2">
-            {tema.acoes.map((a) => (
-              <li key={a} className="flex gap-2 text-sm leading-relaxed text-card-foreground">
-                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent" />
-                {a}
-              </li>
-            ))}
-          </ul>
+          <div className="mt-5 rounded-xl border border-accent/40 bg-accent/10 p-4">
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent">
+              <ListChecks className="size-4" />
+              Plano de ação
+            </p>
+            <ul className="mt-2.5 space-y-2">
+              {tema.acoes.map((a, i) => (
+                <li key={a} className="flex gap-2.5 text-sm font-medium leading-relaxed text-card-foreground">
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground">
+                    {i + 1}
+                  </span>
+                  {a}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
 

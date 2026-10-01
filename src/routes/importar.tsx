@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   Download,
+  FileDown,
   Upload,
   FileSpreadsheet,
   Loader2,
@@ -11,11 +12,16 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import * as XLSX from "xlsx";
-import { importarEntrevistas, type ResultadoImportacao } from "@/lib/entrevistas.functions";
+import {
+  COLUNAS,
+  exportarEntrevistasBrutas,
+  importarEntrevistas,
+  type ResultadoImportacao,
+} from "@/lib/entrevistas.functions";
 
 export const Route = createFileRoute("/importar")({
   head: () => ({
-    meta: [{ title: "Importar entrevistas em massa | Grupo RDZ" }],
+    meta: [{ title: "Importar e exportar entrevistas em massa | Grupo RDZ" }],
   }),
   component: ImportarPage,
 });
@@ -28,6 +34,32 @@ function ImportarPage() {
   const [processando, setProcessando] = useState(false);
   const [importando, setImportando] = useState(false);
   const [resultado, setResultado] = useState<ResultadoImportacao | null>(null);
+  const [exportando, setExportando] = useState(false);
+
+  async function handleExportar() {
+    setExportando(true);
+    try {
+      const linhasBrutas = await exportarEntrevistasBrutas();
+      if (!linhasBrutas.length) {
+        toast.warning("Não há entrevistas para exportar ainda.");
+        return;
+      }
+      const planilha = XLSX.utils.json_to_sheet(linhasBrutas, { header: [...COLUNAS] });
+      const pasta = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(pasta, planilha, "Entrevistas");
+      const dataHoje = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(pasta, `entrevistas-desligamento-${dataHoje}.xlsx`);
+      toast.success(
+        `${linhasBrutas.length} ${linhasBrutas.length === 1 ? "entrevista exportada" : "entrevistas exportadas"}.`,
+      );
+    } catch (erro) {
+      toast.error(
+        `Falha ao exportar: ${erro instanceof Error ? erro.message : "erro desconhecido"}`,
+      );
+    } finally {
+      setExportando(false);
+    }
+  }
 
   async function handleArquivo(file: File) {
     setArquivo(file);
@@ -102,12 +134,34 @@ function ImportarPage() {
         </Link>
 
         <h1 className="mt-4 font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-          Importar entrevistas em massa
+          Importar e exportar entrevistas em massa
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Baixe o template, preencha offline e envie o arquivo aqui. Você confere uma prévia
           antes de qualquer dado ser gravado.
         </p>
+
+        <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+          <h2 className="font-display text-base font-semibold text-card-foreground">
+            Exportar dados atuais
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Baixa todas as entrevistas já cadastradas em uma planilha .xlsx — útil para backup ou
+            para editar em massa fora do sistema.
+          </p>
+          <button
+            onClick={() => void handleExportar()}
+            disabled={exportando}
+            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            {exportando ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <FileDown className="size-4" />
+            )}
+            {exportando ? "Exportando…" : "Exportar entrevistas (.xlsx)"}
+          </button>
+        </section>
 
         <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
           <h2 className="font-display text-base font-semibold text-card-foreground">

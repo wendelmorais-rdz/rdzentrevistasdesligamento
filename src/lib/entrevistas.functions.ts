@@ -106,6 +106,26 @@ export const listarEntrevistas = createServerFn({ method: "GET" }).handler(
   async (): Promise<Entrevista[]> => buscarEntrevistas(),
 );
 
+// Linhas "cruas", nos mesmos nomes de coluna do Supabase — usado na
+// exportação em massa, para gerar uma planilha com a mesma estrutura do
+// template de importação.
+export const exportarEntrevistasBrutas = createServerFn({ method: "GET" }).handler(
+  async (): Promise<LinhaEntrevista[]> => {
+    const url = process.env["EXT_SUPABASE_URL"];
+    const key = process.env["EXT_SUPABASE_SERVICE_ROLE_KEY"];
+    if (!url || !key) return [];
+
+    const resposta = await fetch(
+      `${url}/rest/v1/Entrevistadesligamento?select=*&order=carimbo_data_hora.desc`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+    );
+    if (!resposta.ok) return [];
+
+    const linhas = (await resposta.json()) as LinhaEntrevista[];
+    return Array.isArray(linhas) ? linhas : [];
+  },
+);
+
 export const excluirEntrevista = createServerFn({ method: "POST" })
   .validator((entrada: { id: string }) => entrada)
   .handler(async ({ data: { id } }): Promise<{ ok: boolean }> => {

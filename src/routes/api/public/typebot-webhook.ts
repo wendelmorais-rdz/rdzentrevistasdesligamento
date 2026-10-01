@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { COLUNAS, type LinhaEntrevista } from "@/lib/entrevistas.functions";
+import { COLUNAS, paraIso, type LinhaEntrevista } from "@/lib/entrevistas.functions";
 
 const ALIASES: Record<string, (typeof COLUNAS)[number]> = {
   email: "endereco_email",
@@ -22,13 +22,6 @@ function normalizar(chave: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
-}
-
-function paraIso(valor: string): string | null {
-  const br = valor.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
-  if (/^\d{4}-\d{2}-\d{2}/.test(valor)) return valor.slice(0, 10);
-  return null;
 }
 
 export const Route = createFileRoute("/api/public/typebot-webhook")({

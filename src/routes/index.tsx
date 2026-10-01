@@ -1,6 +1,6 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertOctagon, AlertTriangle, CheckCircle2, Loader2, Trash2 } from "lucide-react";
+import { AlertOctagon, AlertTriangle, CheckCircle2, Loader2, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import {
   CRITERIOS,
@@ -286,11 +286,20 @@ function Dashboard() {
               Respostas coletadas entre 23 e 26 de janeiro de 2026.
             </p>
           </div>
-          <img
-            src="/logo-rdz.png"
-            alt="Logo Grupo RDZ"
-            className="h-16 w-auto object-contain sm:h-20"
-          />
+          <div className="flex flex-col items-end gap-2">
+            <Link
+              to="/importar"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-medium text-card-foreground shadow-[var(--shadow-card)] transition-colors hover:bg-secondary"
+            >
+              <Upload className="size-3.5" />
+              Importar em massa
+            </Link>
+            <img
+              src="/logo-rdz.png"
+              alt="Logo Grupo RDZ"
+              className="h-16 w-auto object-contain sm:h-20"
+            />
+          </div>
         </header>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

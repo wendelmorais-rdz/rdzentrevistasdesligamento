@@ -54,6 +54,13 @@ function limpar(v: string | null | undefined): string | null {
   return s.length ? s : null;
 }
 
+export function paraIso(valor: string): string | null {
+  const br = valor.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+  if (/^\d{4}-\d{2}-\d{2}/.test(valor)) return valor.slice(0, 10);
+  return null;
+}
+
 export function mapearEntrevista(linha: LinhaEntrevista): Entrevista {
   const notas = Object.fromEntries(
     CRITERIOS.map((c, i) => [c, paraNota(linha[COLUNAS_AVALIACAO[i]!])]),
@@ -123,5 +130,93 @@ export const excluirEntrevista = createServerFn({ method: "POST" })
       throw new Error(`Falha ao excluir (${resposta.status}): ${detalhe.slice(0, 300)}`);
     }
     return { ok: true };
+  });
+
+function paraIsoCompleto(valor: string): string | null {
+  if (/^\d{4}-\d{2}-\d{2}T/.test(valor)) return valor;
+  const iso = paraIso(valor);
+  return iso ? `${iso}T00:00:00.000Z` : null;
+}
+
+export type ResultadoImportacao = {
+  inseridas: number;
+  ignoradas: number;
+  motivosIgnoradas: string[];
+};
+
+// Recebe as linhas já lidas da planilha no navegador (cada uma é um objeto
+// {nome_da_coluna: valor}, nos mesmos nomes de coluna do Supabase — é
+// exatamente o que o template de importação gera). Limpa e grava em lote.
+export const importarEntrevistas = createServerFn({ method: "POST" })
+  .validator((entrada: { linhas: Record<string, unknown>[] }) => entrada)
+  .handler(async ({ data: { linhas } }): Promise<ResultadoImportacao> => {
+    const url = process.env["EXT_SUPABASE_URL"];
+    const key = process.env["EXT_SUPABASE_SERVICE_ROLE_KEY"];
+    if (!url || !key) throw new Error("Banco não configurado.");
+
+    const permitidas = new Set<string>(COLUNAS);
+    const validas: LinhaEntrevista[] = [];
+    const motivosIgnoradas: string[] = [];
+
+    linhas.forEach((bruto, indice) => {
+      const linha: LinhaEntrevista = {};
+      for (const [chaveBruta, valor] of Object.entries(bruto)) {
+        if (!permitidas.has(chaveBruta)) continue;
+        const chave = chaveBruta as (typeof COLUNAS)[number];
+        if (valor === null || valor === undefined) continue;
+        const texto = String(valor).slice(0, 4000).trim();
+        if (!texto) continue;
+
+        if (chave === "data_admissao" || chave === "data_demissao") {
+          const iso = paraIso(texto);
+          if (iso) linha[chave] = iso;
+          continue;
+        }
+        if (chave === "carimbo_data_hora") {
+          const iso = paraIsoCompleto(texto);
+          if (iso) linha.carimbo_data_hora = iso;
+          continue;
+        }
+        linha[chave] = texto;
+      }
+
+      if (!linha.nome) {
+        motivosIgnoradas.push(`Linha ${indice + 1} da planilha: sem o campo "nome"`);
+        return;
+      }
+      if (!linha.carimbo_data_hora) linha.carimbo_data_hora = new Date().toISOString();
+      validas.push(linha);
+    });
+
+    if (!validas.length) {
+      return { inseridas: 0, ignoradas: motivosIgnoradas.length, motivosIgnoradas };
+    }
+
+    // O insert em lote do PostgREST exige que todo objeto do array tenha
+    // exatamente o mesmo conjunto de chaves — senão rejeita o lote inteiro
+    // com "All object keys must match" (PGRST102). Como cada entrevista deixa
+    // perguntas diferentes em branco, preenchemos as colunas ausentes com
+    // null em vez de omiti-las.
+    const completas = validas.map((linha) =>
+      Object.fromEntries(COLUNAS.map((coluna) => [coluna, linha[coluna] ?? null])),
+    );
+
+    const resposta = await fetch(`${url}/rest/v1/Entrevistadesligamento`, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify(completas),
+    });
+
+    if (!resposta.ok) {
+      const detalhe = await resposta.text();
+      throw new Error(`Falha ao importar (${resposta.status}): ${detalhe.slice(0, 300)}`);
+    }
+
+    return { inseridas: validas.length, ignoradas: motivosIgnoradas.length, motivosIgnoradas };
   });
 

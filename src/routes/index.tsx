@@ -724,6 +724,11 @@ function AnaliseSugestoes({ total }: { total: number }) {
     queryFn: () => gerarAnalise({ data: { periodo } }),
     staleTime: 1000 * 60 * 30,
     retry: false,
+    // A análise usa um LLM e não é de graça/instantânea — só deve rodar
+    // quando a pessoa pedir explicitamente, clicando em "Refazer análise".
+    // Nunca automaticamente ao carregar ou atualizar a página, nem ao
+    // trocar o período selecionado.
+    enabled: false,
   });
 
   const temas = data?.temas?.length ? data.temas : TEMAS;
